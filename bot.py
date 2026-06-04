@@ -19,44 +19,29 @@ def main_menu():
         [InlineKeyboardButton(text="📸 Fotoğraf Modelleri", callback_data="foto_menu")],
         [InlineKeyboardButton(text="🎥 Video Modelleri", callback_data="video_menu")],
         [InlineKeyboardButton(text="🔥 Soyundurma / Nude", callback_data="nude_menu")],
-        [InlineKeyboardButton(text="👙 Bikini & İç Çamaşırı", callback_data="bikini_menu")],
+        [InlineKeyboardButton(text="👙 Bikini", callback_data="bikini_menu")],
         [InlineKeyboardButton(text="🔄 Face Swap", callback_data="faceswap")]
     ])
     return keyboard
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.reply(
-        "🤖 **Hayaller Gerçekleşir NSFW Bot**\n\n"
-        "Ne yapmak istiyorsun?", 
-        reply_markup=main_menu()
-    )
-
-# Face Swap
-@dp.callback_query(lambda c: c.data == "faceswap")
-async def faceswap(callback):
-    await callback.message.edit_text("🔄 **Face Swap Aktif**\n\n1. Yüz fotoğrafı gönder\n2. Hedef video veya fotoğraf gönder")
+    await message.reply("🤖 **Hayaller Gerçekleşir NSFW Bot**\n\nNe yapmak istiyorsun?", reply_markup=main_menu())
 
 # Soyundurma
 @dp.callback_query(lambda c: c.data == "nude_menu")
 async def nude_menu(callback):
     await callback.message.edit_text("🔥 **Soyundurma Modu Aktif**\n\nSoyundurmak istediğin fotoğrafı gönder.")
 
-# Bikini
-@dp.callback_query(lambda c: c.data == "bikini_menu")
-async def bikini_menu(callback):
-    await callback.message.edit_text("👙 **Bikini & İç Çamaşırı Modu Aktif**\n\nFotoğrafı gönder.")
-
-# Fotoğraf İşleme (Soyundurma ve Bikini için)
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
-    await message.reply("⏳ İşleniyor...")
+    await message.reply("⏳ Soyundurma işlemi yapılıyor... (Kredi harcanacak)")
 
     try:
         file = await bot.get_file(message.photo[-1].file_id)
         await bot.download_file(file.file_path, "input.jpg")
 
-        # Basit Face Swap (şu an test için)
+        # Basit test için Face Swap (soyundurma için daha iyi model bulana kadar)
         output = replicate_client.run(
             "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
             input={
@@ -66,7 +51,7 @@ async def handle_photo(message: types.Message):
         )
         await message.reply_photo(types.BufferedInputFile(open(output[0], "rb"), filename="result.jpg"))
     except Exception as e:
-        await message.reply(f"❌ Hata: {str(e)[:150]}\n\nKredi yetersiz olabilir.")
+        await message.reply(f"❌ Hata: {str(e)[:200]}\n\nKredi yetersiz veya model sorunu olabilir.")
 
 async def main():
     await dp.start_polling(bot)
