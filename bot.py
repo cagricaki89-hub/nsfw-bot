@@ -2,6 +2,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram import F
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import replicate
 import asyncio
 
@@ -13,34 +14,30 @@ dp = Dispatcher()
 
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
+# Ana Menü
+def main_menu():
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📸 Fotoğraf Modelleri", callback_data="foto_menu")],
+        [InlineKeyboardButton(text="🎥 Video Modelleri", callback_data="video_menu")],
+        [InlineKeyboardButton(text="🔄 Face Swap", callback_data="faceswap")]
+    ])
+    return keyboard
+
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.reply("🤖 **Video Face Swap Botu**\n\n1. Bir yüz fotoğrafı gönder\n2. Bir video gönder")
+    await message.reply("🤖 **Sumka Tarzı NSFW Bot**\n\nNe yapmak istiyorsun?", reply_markup=main_menu())
 
-@dp.message(F.video)
-async def handle_video(message: types.Message):
-    await message.reply("⏳ Video işleniyor... Lütfen bekleyin (30-90 saniye)")
+@dp.callback_query(lambda c: c.data == "foto_menu")
+async def foto_menu(callback):
+    await callback.message.edit_text("📸 Fotoğraf Modelleri:\n\nSeçenekler yakında eklenecek...")
 
-    try:
-        # Video indir
-        file = await bot.get_file(message.video.file_id)
-        await bot.download_file(file.file_path, "target.mp4")
+@dp.callback_query(lambda c: c.data == "video_menu")
+async def video_menu(callback):
+    await callback.message.edit_text("🎥 Video Modelleri:\n\nSeçenekler yakında eklenecek...")
 
-        # Face Swap
-        output = replicate_client.run(
-            "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
-            input={
-                "target_video": open("target.mp4", "rb"),
-                "swap_image": "https://picsum.photos/id/64/512/512",
-                "fps": 15
-            }
-        )
-
-        await message.reply_video(
-            types.BufferedInputFile(open(output[0], "rb"), filename="swapped.mp4")
-        )
-    except Exception as e:
-        await message.reply(f"❌ Hata: {str(e)[:200]}")
+@dp.callback_query(lambda c: c.data == "faceswap")
+async def faceswap(callback):
+    await callback.message.edit_text("🔄 Face Swap aktif.\nYüz fotoğrafı + Video gönder.")
 
 async def main():
     await dp.start_polling(bot)
