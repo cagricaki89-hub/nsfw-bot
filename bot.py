@@ -1,10 +1,11 @@
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram import F
 import replicate
 import asyncio
 
-TELEGRAM_TOKEN = "8933927531:AAEN2P0tPpRLjXULw1NkZjFtMn50N5P33gk"
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 bot = Bot(token=TELEGRAM_TOKEN)
@@ -14,11 +15,11 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.reply("🤖 **Video Face Swap Botu**\n\n1. Yüz fotoğrafı gönder\n2. Video gönder")
+    await message.reply("🤖 **Video Face Swap Botu**\n\nYüz fotoğrafı + Video gönder")
 
 @dp.message(F.video)
 async def handle_video(message: types.Message):
-    await message.reply("⏳ Video işleniyor... Sabırlı ol (30-90 sn)")
+    await message.reply("⏳ Video işleniyor... (30-90 saniye)")
 
     try:
         file = await bot.get_file(message.video.file_id)
