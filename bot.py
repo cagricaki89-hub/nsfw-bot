@@ -17,8 +17,7 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 def main_menu():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔥 Soyundurma", callback_data="nude")],
-        [InlineKeyboardButton(text="🔄 Face Swap", callback_data="swap")],
-        [InlineKeyboardButton(text="👙 Bikini", callback_data="bikini")]
+        [InlineKeyboardButton(text="🔄 Face Swap", callback_data="swap")]
     ])
     return keyboard
 
@@ -26,17 +25,13 @@ def main_menu():
 async def start(message: types.Message):
     await message.reply("🤖 **Hayaller Gerçekleşir NSFW Bot**\n\nNe yapmak istiyorsun?", reply_markup=main_menu())
 
+@dp.callback_query(F.data == "swap")
+async def swap(callback):
+    await callback.message.edit_text("🔄 Face Swap aktif.\nYüz fotoğrafı + hedef fotoğraf gönder.")
+
 @dp.callback_query(F.data == "nude")
 async def nude(callback):
     await callback.message.edit_text("🔥 Soyundurma aktif.\nFotoğraf gönder.")
-
-@dp.callback_query(F.data == "swap")
-async def swap(callback):
-    await callback.message.edit_text("🔄 Face Swap aktif.\nYüz fotoğrafı + hedef gönder.")
-
-@dp.callback_query(F.data == "bikini")
-async def bikini(callback):
-    await callback.message.edit_text("👙 Bikini modu aktif.\nFotoğraf gönder.")
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
@@ -46,17 +41,17 @@ async def handle_photo(message: types.Message):
         file = await bot.get_file(message.photo[-1].file_id)
         await bot.download_file(file.file_path, "input.jpg")
 
-        # Basit test
+        # Fotoğraf için uygun model
         output = replicate_client.run(
-            "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
+            "codeplugtech/face-swap:6a2c3f8f8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e",
             input={
-                "swap_image": open("input.jpg", "rb"),
-                "target_image": open("input.jpg", "rb")
+                "source": open("input.jpg", "rb"),
+                "target": open("input.jpg", "rb")
             }
         )
         await message.reply_photo(types.BufferedInputFile(open(output[0], "rb"), filename="result.jpg"))
     except Exception as e:
-        await message.reply(f"❌ Hata: {str(e)[:150]}")
+        await message.reply(f"❌ Hata: {str(e)[:200]}")
 
 async def main():
     await dp.start_polling(bot)
