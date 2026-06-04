@@ -2,13 +2,17 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram import F
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import replicate
 import asyncio
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
+
+replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 def main_menu():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -16,8 +20,7 @@ def main_menu():
         [InlineKeyboardButton(text="🎥 Video Modelleri", callback_data="video_menu")],
         [InlineKeyboardButton(text="🔥 Soyundurma / Nude", callback_data="nude_menu")],
         [InlineKeyboardButton(text="👙 Bikini & İç Çamaşırı", callback_data="bikini_menu")],
-        [InlineKeyboardButton(text="🔄 Face Swap", callback_data="faceswap")],
-        [InlineKeyboardButton(text="💎 VIP Paketler", callback_data="vip_menu")]
+        [InlineKeyboardButton(text="🔄 Face Swap", callback_data="faceswap")]
     ])
     return keyboard
 
@@ -29,58 +32,41 @@ async def start(message: types.Message):
         reply_markup=main_menu()
     )
 
-@dp.callback_query(lambda c: c.data == "vip_menu")
-async def vip_menu(callback):
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 100 Kredi - 900 Stars", callback_data="buy_100")],
-        [InlineKeyboardButton(text="💰 300 Kredi - 2500 Stars", callback_data="buy_300")],
-        [InlineKeyboardButton(text="👑 VIP Aylık - 8000 Stars", callback_data="buy_vip")]
-    ])
-    await callback.message.edit_text("💎 **VIP Paketler**\n\nKaç kredi almak istiyorsun?", reply_markup=keyboard)
+# Face Swap
+@dp.callback_query(lambda c: c.data == "faceswap")
+async def faceswap(callback):
+    await callback.message.edit_text("🔄 **Face Swap Aktif**\n\n1. Yüz fotoğrafı gönder\n2. Hedef video veya fotoğraf gönder")
 
-@dp.callback_query(lambda c: c.data == "buy_100")
-async def buy_100(callback):
-    prices = [LabeledPrice(label="100 Kredi Paketi", amount=900)]
-    await bot.send_invoice(
-        chat_id=callback.message.chat.id,
-        title="100 Kredi Paketi",
-        description="Yaklaşık 30-35 görsel + 5-7 video",
-        payload="vip_100",
-        provider_token=os.getenv("PAYMENT_TOKEN"),
-        currency="XTR",
-        prices=prices
-    )
+# Soyundurma
+@dp.callback_query(lambda c: c.data == "nude_menu")
+async def nude_menu(callback):
+    await callback.message.edit_text("🔥 **Soyundurma Modu Aktif**\n\nSoyundurmak istediğin fotoğrafı gönder.")
 
-@dp.callback_query(lambda c: c.data == "buy_300")
-async def buy_300(callback):
-    prices = [LabeledPrice(label="300 Kredi Paketi", amount=2500)]
-    await bot.send_invoice(
-        chat_id=callback.message.chat.id,
-        title="300 Kredi Paketi",
-        description="Yaklaşık 90-100 görsel + 15-20 video",
-        payload="vip_300",
-        provider_token=os.getenv("PAYMENT_TOKEN"),
-        currency="XTR",
-        prices=prices
-    )
+# Bikini
+@dp.callback_query(lambda c: c.data == "bikini_menu")
+async def bikini_menu(callback):
+    await callback.message.edit_text("👙 **Bikini & İç Çamaşırı Modu Aktif**\n\nFotoğrafı gönder.")
 
-@dp.callback_query(lambda c: c.data == "buy_vip")
-async def buy_vip(callback):
-    prices = [LabeledPrice(label="VIP Aylık Paket", amount=8000)]
-    await bot.send_invoice(
-        chat_id=callback.message.chat.id,
-        title="VIP Aylık Paket",
-        description="3000 kredi + öncelikli kullanım",
-        payload="vip_aylik",
-        provider_token=os.getenv("PAYMENT_TOKEN"),
-        currency="XTR",
-        prices=prices
-    )
+# Fotoğraf İşleme (Soyundurma ve Bikini için)
+@dp.message(F.photo)
+async def handle_photo(message: types.Message):
+    await message.reply("⏳ İşleniyor...")
 
-# Diğer menüler (şimdilik)
-@dp.callback_query(lambda c: c.data in ["foto_menu", "video_menu", "nude_menu", "bikini_menu", "faceswap"])
-async def coming_soon(callback):
-    await callback.message.edit_text("⚠️ Bu özellik yakında aktif olacak.\n\nVIP paket alarak öncelik kazanabilirsiniz.")
+    try:
+        file = await bot.get_file(message.photo[-1].file_id)
+        await bot.download_file(file.file_path, "input.jpg")
+
+        # Basit Face Swap (şu an test için)
+        output = replicate_client.run(
+            "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
+            input={
+                "swap_image": open("input.jpg", "rb"),
+                "target_image": open("input.jpg", "rb")
+            }
+        )
+        await message.reply_photo(types.BufferedInputFile(open(output[0], "rb"), filename="result.jpg"))
+    except Exception as e:
+        await message.reply(f"❌ Hata: {str(e)[:150]}\n\nKredi yetersiz olabilir.")
 
 async def main():
     await dp.start_polling(bot)
