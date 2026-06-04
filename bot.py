@@ -15,16 +15,18 @@ replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.reply("🤖 **Video Face Swap Botu**\n\nYüz fotoğrafı + Video gönder")
+    await message.reply("🤖 **Video Face Swap Botu**\n\n1. Bir yüz fotoğrafı gönder\n2. Bir video gönder")
 
 @dp.message(F.video)
 async def handle_video(message: types.Message):
-    await message.reply("⏳ Video işleniyor... (30-90 saniye)")
+    await message.reply("⏳ Video işleniyor... Lütfen bekleyin (30-90 saniye)")
 
     try:
+        # Video indir
         file = await bot.get_file(message.video.file_id)
         await bot.download_file(file.file_path, "target.mp4")
 
+        # Face Swap
         output = replicate_client.run(
             "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
             input={
@@ -34,9 +36,11 @@ async def handle_video(message: types.Message):
             }
         )
 
-        await message.reply_video(types.BufferedInputFile(open(output[0], "rb"), filename="swapped.mp4"))
+        await message.reply_video(
+            types.BufferedInputFile(open(output[0], "rb"), filename="swapped.mp4")
+        )
     except Exception as e:
-        await message.reply(f"❌ Hata: {str(e)[:150]}")
+        await message.reply(f"❌ Hata: {str(e)[:200]}")
 
 async def main():
     await dp.start_polling(bot)
