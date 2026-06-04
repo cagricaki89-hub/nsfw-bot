@@ -19,39 +19,24 @@ def main_menu():
         [InlineKeyboardButton(text="📸 Fotoğraf Modelleri", callback_data="foto_menu")],
         [InlineKeyboardButton(text="🎥 Video Modelleri", callback_data="video_menu")],
         [InlineKeyboardButton(text="🔥 Soyunma / Nude", callback_data="nude_menu")],
-        [InlineKeyboardButton(text="👙 Bikini & İç Çamaşırı", callback_data="bikini_menu")],
+        [InlineKeyboardButton(text="👙 Bikini", callback_data="bikini_menu")],
         [InlineKeyboardButton(text="🔄 Face Swap", callback_data="faceswap")]
     ])
     return keyboard
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.reply(
-        "🤖 **Hayaller Gerçekleşir NSFW Bot**\n\n"
-        "Ne yapmak istiyorsun?", 
-        reply_markup=main_menu()
-    )
+    await message.reply("🤖 **Hayaller Gerçekleşir NSFW Bot**\n\nNe yapmak istiyorsun?", reply_markup=main_menu())
 
-# Menü Butonları
-@dp.callback_query(lambda c: c.data == "foto_menu")
-async def foto_menu(callback):
-    await callback.message.edit_text("📸 Fotoğraf Modelleri\n\nSeçenekler yakında aktif olacak...")
-
-@dp.callback_query(lambda c: c.data == "video_menu")
-async def video_menu(callback):
-    await callback.message.edit_text("🎥 Video Modelleri\n\nSeçenekler yakında aktif olacak...")
-
-@dp.callback_query(lambda c: c.data == "nude_menu")
-async def nude_menu(callback):
-    await callback.message.edit_text("🔥 Soyunma / Nude Modu\n\nFotoğraf veya video gönder, soyunma işlemi yapılacak.")
-
-@dp.callback_query(lambda c: c.data == "bikini_menu")
-async def bikini_menu(callback):
-    await callback.message.edit_text("👙 Bikini & İç Çamaşırı Modu\n\nFotoğraf gönder, bikini/lingerie versiyonu yapılacak.")
-
+# Face Swap
 @dp.callback_query(lambda c: c.data == "faceswap")
 async def faceswap(callback):
-    await callback.message.edit_text("🔄 Face Swap aktif.\nYüz fotoğrafı + Hedef video/fotoğraf gönder.")
+    await callback.message.edit_text("🔄 Face Swap aktif.\n\n1. Yüz fotoğrafı gönder\n2. Hedef video veya fotoğraf gönder")
+
+# Diğer menüler (şimdilik placeholder)
+@dp.callback_query(lambda c: c.data in ["foto_menu", "video_menu", "nude_menu", "bikini_menu"])
+async def coming_soon(callback):
+    await callback.message.edit_text("⚠️ Bu özellik yakında aktif olacak.\n\nŞu anda Face Swap çalışıyor.")
 
 async def main():
     await dp.start_polling(bot)
