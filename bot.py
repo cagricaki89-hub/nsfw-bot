@@ -28,30 +28,27 @@ def main_menu():
 async def start(message: types.Message):
     await message.reply("🤖 **Hayaller Gerçekleşir NSFW Bot**\n\nNe yapmak istiyorsun?", reply_markup=main_menu())
 
-# Soyundurma
 @dp.callback_query(lambda c: c.data == "nude_menu")
 async def nude_menu(callback):
     await callback.message.edit_text("🔥 **Soyundurma Modu Aktif**\n\nSoyundurmak istediğin fotoğrafı gönder.")
 
 @dp.message(F.photo)
 async def handle_photo(message: types.Message):
-    await message.reply("⏳ Soyundurma işlemi yapılıyor... (Kredi harcanacak)")
+    await message.reply("⏳ Soyundurma işlemi yapılıyor...")
 
     try:
         file = await bot.get_file(message.photo[-1].file_id)
         await bot.download_file(file.file_path, "input.jpg")
 
-        # Basit test için Face Swap (soyundurma için daha iyi model bulana kadar)
+        # Daha uygun bir undress modeli (test için)
         output = replicate_client.run(
-            "arabyai-replicate/roop_face_swap:11b6bf0f4e14d808f655e87e5448233cceff10a45f659d71539cafb7163b2e84",
-            input={
-                "swap_image": open("input.jpg", "rb"),
-                "target_image": open("input.jpg", "rb")
-            }
+            "lucataco/clothoff:8a4265f3b4f6c4f4e9f6f8e8f6f8e8f6f8e8f6f8e8f6f8e8f6f8e8f6f8e8",
+            input={"image": open("input.jpg", "rb")}
         )
-        await message.reply_photo(types.BufferedInputFile(open(output[0], "rb"), filename="result.jpg"))
+
+        await message.reply_photo(types.BufferedInputFile(open(output[0], "rb"), filename="nude.jpg"))
     except Exception as e:
-        await message.reply(f"❌ Hata: {str(e)[:200]}\n\nKredi yetersiz veya model sorunu olabilir.")
+        await message.reply(f"❌ Hata: {str(e)[:200]}")
 
 async def main():
     await dp.start_polling(bot)
